@@ -8,14 +8,14 @@ import os
 import io
 import json
 import sqlite3
-from .utils import HotelModelWrapper
+from utils import HotelModelWrapper
 
 app = FastAPI(title="Hotel Reservation Prediction API")
 
 # Enable CORS for frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[os.getenv("FRONTEND_ORIGIN", "*")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -103,8 +103,16 @@ def predict_cancellation(data: PredictionInput):
 def get_forecast():
     try:
         # Load data to get historical trends
-        csv_path = os.path.join(os.path.dirname(BASE_DIR), "Hotel_reservations_cleaned.csv")
-        df = pd.read_csv(csv_path)
+        parent_csv = os.path.join(os.path.dirname(BASE_DIR), "Hotel_reservations_cleaned.csv")
+        local_csv = os.path.join(BASE_DIR, "Hotel_reservations_cleaned.csv")
+        fallback_csv = os.path.join("/app", "Hotel_reservations_cleaned.csv")
+        csv_candidates = [local_csv, parent_csv, fallback_csv]
+        for p in csv_candidates:
+            if os.path.exists(p):
+                df = pd.read_csv(p)
+                break
+        else:
+            raise FileNotFoundError("Hotel_reservations_cleaned.csv not found in expected locations")
         
         # Preprocessing for time series (same as notebook)
         df['arrival_datetime'] = pd.to_datetime(df['arrival_datetime'])
