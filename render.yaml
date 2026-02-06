@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hotel-backend
+    env: docker
+    rootDir: backend
+    plan: free
+    dockerfilePath: backend/Dockerfile
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: FRONTEND_ORIGIN
+        value: https://your-vercel-domain.vercel.app
+    previews:
+      autoDeploy: true
