@@ -10,5 +10,7 @@ services:
     envVars:
       - key: FRONTEND_ORIGIN
         value: https://your-vercel-domain.vercel.app
+      - key: ALLOWED_CIDRS
+        value: 74.220.48.0/24,74.220.56.0/24
     previews:
       autoDeploy: true

@@ -8,6 +8,7 @@ import os
 import io
 import json
 import sqlite3
+import ipaddress
 from utils import HotelModelWrapper
 
 app = FastAPI(title="Hotel Reservation Prediction API")
@@ -19,6 +20,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# IP allowlist (optional via env ALLOWED_CIDRS, comma-separated)
+ALLOWED_CIDRS = [s.strip() for s in os.getenv("ALLOWED_CIDRS", "").split(",") if s.strip()]
+NETWORKS = []
+for c in ALLOWED_CIDRS:
+    try:
+        NETWORKS.append(ipaddress.ip_network(c, strict=False))
+    except Exception:
+        pass
+
+def ip_allowed(ip_str: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except Exception:
+        return False
+    for n in NETWORKS:
+        if ip in n:
+            return True
+    return False
+
+@app.middleware("http")
+async def ip_allowlist(request, call_next):
+    if NETWORKS:
+        xf = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
+        client_ip = xf.split(",")[0].strip() if xf else (request.client.host or "")
+        if not ip_allowed(client_ip):
+            from starlette.responses import PlainTextResponse
+            return PlainTextResponse("Forbidden", status_code=403)
+    return await call_next(request)
 
 # Load model wrapper
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
