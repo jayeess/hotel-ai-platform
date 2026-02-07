@@ -6,3 +6,7 @@ scikit-learn
 tensorflow
 statsmodels
 notebook
+fastapi
+uvicorn
+python-multipart
+joblib
